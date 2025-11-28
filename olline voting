@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nigerian Institute of Leather and Science Technology - SUG Election</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom CSS variables for a theme */
+        :root {
+            --primary-color: #3f51b5; /* Indigo 500 */
+            --primary-dark: #303f9f; /* Indigo 700 */
+            --accent-color: #f59e0b; /* Amber 500 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+
+        /* Styling for the candidate cards */
+        .voter-card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: 3px solid transparent;
+            border-radius: 0.75rem; /* rounded-xl */
+        }
+        .voter-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.15), 0 6px 10px -3px rgba(0, 0, 0, 0.1);
+        }
+        /* Highlight for the selected candidate */
+        .voter-card.selected {
+            border-color: var(--primary-color);
+            background-color: #e8eaf6; /* Light indigo */
+            box-shadow: 0 0 0 4px rgba(63, 81, 181, 0.2); /* Ring effect */
+        }
+        /* Primary button styling */
+        .btn-primary {
+            background-color: var(--primary-color);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        /* Styling for disabled inputs (Read-only appearance) */
+        input:disabled {
+            background-color: #e5e7eb; /* Light gray background for disabled fields */
+            cursor: default;
+            color: #1f2937; /* Dark text for clarity */
+            font-weight: 600;
+        }
+        .nav-link {
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+        .nav-link:hover {
+            color: #ccc;
+        }
+        .admin-link {
+            color: var(--accent-color);
+        }
+        .admin-link:hover {
+            color: #d97706; /* Amber 700 */
+        }
+        .tab-button {
+            transition: color 0.2s, border-color 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-button.active {
+            border-bottom: 3px solid var(--accent-color); /* Updated to use accent color for tab underline */
+            font-weight: 600;
+            color: #1f2937;
+        }
+        /* .gemini-btn class REMOVED */
+        .pagination-btn {
+            background-color: #e5e7eb;
+            color: #374151;
+            transition: background-color 0.2s;
+        }
+        .pagination-btn:hover {
+            background-color: #d1d5db;
+        }
+        .pagination-btn:disabled {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Loading Overlay Has Been REMOVED -->
+
+    <!-- Main Application Container -->
+    <div id="app" class="w-full max-w-4xl bg-white rounded-xl overflow-hidden shadow-2xl">
+
+        <!-- Header -->
+        <header class="bg-indigo-700 p-4 sm:p-6 text-white text-center rounded-t-xl">
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <!-- School Logo (Using a generic placeholder as the original NUBAPOLY one is now incorrect) -->
+                <img src="https://placehold.co/100x100/3f51b5/FFFFFF?text=NILEST" alt="NILEST Logo" class="h-16 w-16 rounded-full object-contain">
+                
+                <div>
+                    <h1 class="text-3xl font-bold">SUG Presidential Election Portal</h1>
+                    <p class="text-indigo-200 mt-1 text-lg">
+                        Nigerian Institute of Leather and Science Technology, Zaria
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-center items-center mt-3 sm:mt-2">
+                <span id="digital-clock" class="text-white text-sm font-mono mr-3 font-bold">Loading Clock...</span>
+                <span class="pl-3 border-l border-indigo-500">
+                    <a id="nav-toggle" onclick="togglePortal()" class="nav-link admin-link text-sm font-semibold"></a>
+                </span>
+            </div>
+        </header>
+
+        <!-- Main Content Area (Dynamic) -->
+        <main id="content-area" class="p-6 sm:p-10"></main>
+
+        <!-- Footer -->
+        <footer class="text-center p-4 text-sm text-gray-500 border-t mt-4">
+            <p>&copy; 2025 SUG Electoral Committee. Secure Voting System (Simulation).</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Global State Management ---
+        let currentPage = 'registration'; 
+        let selectedCandidate = null;
+        let registeredUser = { name: null, id: null, department: null };
+        let isAdminLoggedIn = false;
+        let candidateViewingId = null; 
+        
+        let wasElectionOpen = false; // Cache the previous election status
+        let adminDashboardTab = 'status'; // Tracks the current admin tab
+        let studentCurrentPage = 1; // For student list pagination
+        const studentsPerPage = 10;
+        let studentSearchFilter = '';
+
+        // --- Admin Controlled Election Times (HH:MM format) ---
+        let electionStartTime = '10:00'; // Default start time (10:00 AM)
+        let electionCloseTime = '15:00'; // Default close time (3:00 PM)
+
+        // --- Configuration Data ---
+        
+        // Admin Credentials
+        const adminCredentials = { 
+            username: 'ASGALADIMA', 
+            password: 'galadima123' 
+        };
+
+        // Election Security Config: Defines the months (0-indexed: 0=Jan, 11=Dec) and years when registration is valid.
+        const validElectionPeriods = [
+            { year: 2025, month: 10 }, // Valid in November 2025 (Month 10)
+        ];
+
+        // TRACKER 1: Stores Matriculation IDs who have cast a vote (Matric ID -> Candidate ID)
+        let voteResults = {
+            'CMS/240001': 'CAND001', // Pre-voted: ABDULRAHMAN SALISU GALADIMA
+            'CENG/240005': 'CAND002', // Pre-voted: AMINA BABA AHMAD
+        };
+
+
+        // Helper to convert "HH:MM" to minutes from midnight
+        function timeToMinutes(timeStr) {
+            if (!timeStr || !timeStr.includes(':')) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return (hours * 60) + minutes;
+        }
+
+        /**
+         * Checks if the election is open based on the current date and time.
+         */
+        function isElectionOpen() {
+            const now = new Date(); // Use real time now
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth(); 
+            const currentHour = now.getHours();
+
+            // 1. Date Check (Month/Year)
+            const isDateValid = validElectionPeriods.some(period => {
+                return period.year === currentYear && period.month === currentMonth;
+            });
+            
+            // 2. Time Check: Uses dynamically set global times (electionStartTime, electionCloseTime)
+            const nowMinutes = (currentHour * 60) + now.getMinutes();
+            const startMinutes = timeToMinutes(electionStartTime);
+            const closeMinutes = timeToMinutes(electionCloseTime);
+
+            const isTimeValid = nowMinutes >= startMinutes && nowMinutes < closeMinutes; 
+
+            return isDateValid && isTimeValid;
+        }
+        
+
+        // Department Mapping for Validation (Matriculation Number Prefixes)
+        let departmentPrefixes = {
+            'Select Department': null,
+            'Science Laboratory Technology (SLT)': 'SLT/',
+            'Computer Science': 'CMS/',
+            'Computer Engineering': 'CENG/',
+            'Building Architecture': 'BARCH/',
+            'Public Administration': 'PA/',
+            'Mass Communication': 'MC/',
+            'Business Education': 'BSEDUC/'
+        };
+        
+        // Student Database for Auto-fill (Simulated Database of Eligible Voters)
+        let studentDatabase = {
+            'CMS/240001': { name: 'ABDULRAHMAN SALISU GALADIMA', dept: 'Computer Science' },
+            'SLT/240001': { name: 'USAMAN MUSA', dept: 'Science Laboratory Technology (SLT)' },
+            'CENG/240005': { name: 'AMINA BABA AHMAD', dept: 'Computer Engineering' },
+            'BARCH/230110': { name: 'IKECHUKWU CHUKWUEMEKA', dept: 'Building Architecture' },
+            'CMS/240002': { name: 'FATIMA YUSUF', dept: 'Computer Science' },
+            'SLT/240002': { name: 'OLAYINKA ADEKUNLE', dept: 'Science Laboratory Technology (SLT)' }
+        };
+        
+        // Dynamic data for the current running election
+        const currentElectionStats = { 
+            get totalStudentsRegistered() { return Object.keys(studentDatabase).length; }
+        }; 
+
+        // Candidate List with Login Credentials (Must be modifiable by Admin)
+        let candidates = [
+            { id: 'CAND001', name: 'Musa Abdullahi', department: 'Electrical Engineering', motto: 'Restoring Student Welfare', manifesto: 'Focusing on academic excellence and improved hostel facilities.', loginId: 'musa_id', password: 'musa123', photoUrl: getAvatarUrl('Musa Abdullahi') },
+            { id: 'CAND002', name: 'Zainab Idris', department: 'Computer Science', motto: 'Innovation & Transparency', manifesto: 'Bringing digital solutions to student services and ensuring financial accountability.', loginId: 'zainab_id', password: 'zainab123', photoUrl: getAvatarUrl('Zainab Idris') },
+            { id: 'CAND003', name: 'Chinedu Okoro', department: 'Business Administration', motto: 'A Voice for Every Student', manifesto: 'Championing entrepreneurship programs and better campus security for all.', loginId: 'chinedu_id', password: 'chinedu123', photoUrl: getAvatarUrl('Chinedu Okoro') }
+        ];
+
+        // Utility function to generate a new Candidate ID
+        function generateCandidateId() {
+            const nextIdNum = (candidates.length > 0 ? Math.max(...candidates.map(c => parseInt(c.id.replace('CAND', '')))) : 0) + 1;
+            return 'CAND' + nextIdNum.toString().padStart(3, '0');
+        }
+
+        // Utility function to generate a new candidate login ID
+        function generateCandidateLoginId(name) {
+            const parts = name.toLowerCase().split(' ');
+            return parts[0] + '_id'; // e.g., 'musa_id'
+        }
+
+        // Utility function to get a random placeholder image URL
+        function getAvatarUrl(name) {
+            const seed = name.replace(/\s+/g, '-').toLowerCase();
+            return `https://i.pravatar.cc/150?u=${seed}`;
+        }
+        
+        // --- LOADING FUNCTIONS (REMOVED) ---
+        // function showLoading() {}
+        // function hideLoading() {}
+
+        // --- Gemini API Integration (REMOVED) ---
+        // All API functions have been removed to clean the code.
+
+        // --- Clock and Polling Functions ---
+
+        /**
+         * Updates the digital clock display and re-renders the registration page if needed.
+         */
+        function updateClockAndStatus() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const clockElement = document.getElementById('digital-clock');
+            if (clockElement) {
+                clockElement.textContent = timeStr;
+            }
+            
+            // Check if the election status has changed (e.g., crossing start/close time)
+            const isNowOpen = isElectionOpen();
+            
+            // Re-render the registration page only if the status changed AND we are on the registration page
+            if (currentPage === 'registration' && isNowOpen !== wasElectionOpen) {
+                wasElectionOpen = isNowOpen; // Update cache
+                renderRegistration(); // This will lock/unlock the form or show results
+            }
+        }
+
+        /**
+         * Starts the continuous clock and status checking loop.
+         */
+        function startClockAndPolling() {
+            // Initial render and status set
+            wasElectionOpen = isElectionOpen();
+            updateClockAndStatus(); 
+            
+            // Update every second
+            setInterval(updateClockAndStatus, 1000); 
+        }
+
+        // --- Navigation Functions ---
+
+        /**
+         * Toggles between the Student Portal and the Admin/Candidate Login page.
+         */
+        function togglePortal() {
+            if (currentPage.includes('admin') || currentPage.includes('candidate') || currentPage.includes('portalLogin')) {
+                // Moving from Admin/Candidate/Login to Student
+                currentPage = 'registration';
+                isAdminLoggedIn = false; 
+                candidateViewingId = null; // Log out candidate on exit
+            } else {
+                // Moving from Student to Login
+                currentPage = 'portalLogin';
+            }
+            renderApp();
+        }
+
+        // --- Vote Calculation Utility ---
+
+        /**
+         * Calculates the total votes for a specific candidate ID.
+         */
+        function getCandidateScore(candidateId) {
+            return Object.values(voteResults).filter(vote => vote === candidateId).length;
+        }
+        
+        /**
+         * Calculates the full results, determines the winner, and returns a results object.
+         */
+        function getElectionResults() {
+            const currentTotalVotesCast = Object.keys(voteResults).length;
+            let winner = null;
+            let maxScore = -1;
+
+            const candidateScores = candidates.map(c => {
+                const score = getCandidateScore(c.id);
+                const scorePercentage = ((score / currentTotalVotesCast) * 100) || 0;
+                
+                if (score > maxScore) {
+                    maxScore = score;
+                    winner = { ...c, score, scorePercentage };
+                }
+                
+                return { ...c, score, scorePercentage };
+            });
+            
+            // Sort by score, descending
+            candidateScores.sort((a, b) => b.score - a.score);
+
+            return {
+                winner: currentTotalVotesCast > 0 ? winner : null,
+                allScores: candidateScores,
+                totalVotes: currentTotalVotesCast
+            };
+        }
+
+        /**
+         * --- NEW (CORRECTED) ---
+         * Calculates the real-time vote summary per department.
+         */
+        function getDepartmentalSummary() {
+            let summary = {};
+
+            // 1. Initialize summary for all departments
+            for (const deptName in departmentPrefixes) {
+                if (deptName === 'Select Department') continue;
+                summary[deptName] = {
+                    totalEligible: 0,
+                    votesCast: 0
+                };
+            }
+
+            // 2. Count eligible students per department
+            for (const matricId in studentDatabase) {
+                const student = studentDatabase[matricId];
+                if (summary[student.dept]) {
+                    summary[student.dept].totalEligible++;
+                }
+            }
+
+            // 3. Count votes cast per department
+            for (const matricId in voteResults) {
+                const student = studentDatabase[matricId]; // Get the voter's details
+                if (student && summary[student.dept]) {
+                    summary[student.dept].votesCast++;
+                }
+            }
+
+            // 4. Convert to array and calculate percentages
+            return Object.keys(summary).map(deptName => {
+                const data = summary[deptName];
+                const percentage = (data.totalEligible > 0) ? ((data.votesCast / data.totalEligible) * 100) : 0;
+                return {
+                    deptName: deptName,
+                    prefix: departmentPrefixes[deptName] || 'N/A',
+                    totalEligible: data.totalEligible,
+                    votesCast: data.votesCast,
+                    percentage: percentage.toFixed(1) // Just the number
+                };
+            }).filter(data => departmentPrefixes[data.deptName]); // Ensure only valid departments are shown
+        }
+
+
+        // --- View Rendering Functions (Student Flow) ---
+        
+        /**
+         * Renders the Public Real-Time Scoreboard (for students).
+         */
+        function renderPublicScoreboard() {
+            const results = getElectionResults();
+            
+            if (results.totalVotes === 0) {
+                 return `
+                    <div class="mb-8 p-4 bg-gray-50 rounded-lg border text-center">
+                        <p class="font-semibold text-gray-700">The Real-Time Scoreboard will appear here once the first votes are cast.</p>
+                    </div>
+                `;
+            }
+            
+            const scoreboardCards = results.allScores.map(c => `
+                <div class="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                    <p class="text-lg font-semibold text-indigo-700">${c.name}</p>
+                    <p class="text-xs text-gray-500 mb-2">${c.department}</p>
+                    <p class="text-3xl font-extrabold text-green-600">${c.score}</p>
+                    <p class="text-sm text-gray-600">${c.scorePercentage.toFixed(1)}% of Vote</p>
+                </div>
+            `).join('');
+
+            return `
+                <div class="mb-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Public Real-Time Scoreboard</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${scoreboardCards}
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Renders the Student Account Creation (Registration) page.
+         */
+        function renderRegistration() {
+            const content = document.getElementById('content-area');
+            
+            // --- ELECTION RESULTS DISPLAY (If closed) ---
+            if (!isElectionOpen() && Object.keys(voteResults).length > 0) {
+                renderElectionResults();
+                return;
+            }
+
+            // --- REGISTRATION DISPLAY (If open) ---
+            let statusMessage = '';
+            let formDisabledClass = '';
+            let formDisabled = false;
+            
+            const now = new Date(); // Use real time
+            const currentMockTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const currentMockDateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+
+            if (!isElectionOpen()) {
+                // ELECTION CLOSED STATE
+                formDisabled = true;
+                formDisabledClass = 'opacity-50 pointer-events-none';
+                
+                let closeReason = 'The election period has expired.';
+                const currentHour = now.getHours();
+                
+                // Determine specific reason for closure
+                const startHour = timeToMinutes(electionStartTime) / 60;
+                const closeHour = timeToMinutes(electionCloseTime) / 60;
+                
+                if (currentHour < startHour || currentHour >= closeHour) {
+                    closeReason = `The voting portal is CLOSED. It is only accessible between ${electionStartTime} and ${electionCloseTime}.`;
+                } else if (!validElectionPeriods.some(p => p.year === now.getFullYear() && p.month === now.getMonth())) {
+                    closeReason = 'The official election month has expired.';
+                }
+
+
+                statusMessage = `
+                    <div class="bg-red-100 p-4 rounded-lg mb-6 border-l-4 border-red-500">
+                        <p class="text-sm text-red-800 font-bold">
+                            ELECTION PORTAL CLOSED: ${closeReason}
+                        </p>
+                        <p class="text-xs text-red-700 mt-1">
+                            Current Date/Time: ${currentMockDateStr} at ${currentMockTime}
+                        </p>
+                    </div>
+                `;
+            } else {
+                // ELECTION OPEN STATE
+                statusMessage = `
+                    <div class="bg-blue-100 p-4 rounded-lg mb-6 border-l-4 border-blue-500">
+                        <p class="text-sm text-blue-800 font-bold">
+                            ELECTION OPEN: Use your Matriculation Number to register and vote.
+                        </p>
+                        <p class="text-xs text-blue-700 mt-1">
+                            Current Date/Time: ${currentMockDateStr} at ${currentMockTime}
+                            <span class="font-bold ml-2">(Voting Hours: ${electionStartTime} - ${electionCloseTime})</span>
+                        </p>
+                    </div>
+                `;
+            }
+
+
+            // Generate department options for the select dropdown
+            const departmentOptions = Object.keys(departmentPrefixes).map(dept => 
+                `<option value="${dept}">${dept}</option>`
+            ).join('');
+
+            content.innerHTML = `
+                <div class="max-w-xl mx-auto">
+                    ${renderPublicScoreboard()}
+
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">Student Verification & Registration</h2>
+                    
+                    ${statusMessage}
+
+                    <form id="registration-form" class="space-y-6 ${formDisabledClass}">
+                        <div>
+                            <label for="department" class="block text-sm font-medium text-gray-700 mb-1">1. Select Your Department</label>
+                            <select id="department" name="department" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required ${formDisabled ? 'disabled' : ''}>
+                                ${departmentOptions}
+                            </select>
+                            <p id="dept-info" class="text-xs text-gray-500 mt-1"></p>
+                        </div>
+                        
+                        <div>
+                            <!-- CORRECTED LABEL -->
+                            <label for="matriculationId" class="block text-sm font-medium text-gray-700 mb-1">2. Enter Your Matriculation Number</label>
+                            <input type="text" id="matriculationId" name="matriculationId" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 uppercase" placeholder="e.g., CMS/240001" required disabled>
+                            <p id="matric-error" class="text-sm text-red-600 mt-1"></p>
+                        </div>
+
+                        <div>
+                            <!-- CORRECTED LABEL -->
+                            <label for="studentName" class="block text-sm font-medium text-gray-700 mb-1">3. Your Name (Auto-filled)</label>
+                            <input type="text" id="studentName" name="studentName" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Name will appear here automatically" required disabled>
+                        </div>
+
+                        <button type="submit" id="register-button" class="btn-primary w-full text-white font-semibold py-3 rounded-lg shadow-lg opacity-50 cursor-not-allowed" disabled>
+                            Verify & Proceed to Vote
+                        </button>
+                    </form>
+                </div>
+            `;
+
+            if (!formDisabled) {
+                document.getElementById('department').addEventListener('change', updateRegistrationFields);
+                document.getElementById('matriculationId').addEventListener('input', validateMatriculation);
+                document.getElementById('registration-form').addEventListener('submit', handleRegistration);
+            }
+
+            // Initial call to set correct disabled states
+            updateRegistrationFields();
+        }
+        
+        /**
+         * Renders the Voting page with candidate cards.
+         */
+        function renderVotePage() {
+            const content = document.getElementById('content-area');
+            
+            let candidateCards = candidates.map(c => `
+                <div id="card-${c.id}" data-id="${c.id}" onclick="selectCandidate('${c.id}')"
+                    class="voter-card bg-white p-6 text-center transition ease-in-out duration-300 flex flex-col items-center">
+                    
+                    <img class="w-24 h-24 rounded-full mb-4 object-cover border-4 border-gray-200" 
+                         src="${c.photoUrl}" alt="Photo of ${c.name}" 
+                         onerror="this.onerror=null;this.src='https://placehold.co/150x150/e0e0e0/555?text=Photo';">
+                    
+                    <h3 class="text-xl font-bold text-indigo-700">${c.name}</h3>
+                    <p class="text-sm text-gray-500 mb-3">${c.department}</p>
+                    <p class="text-lg font-medium italic text-gray-600">"${c.motto}"</p>
+                </div>
+            `).join('');
+
+            content.innerHTML = `
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800">Cast Your Vote for SUG President</h2>
+                    <p class="text-gray-600 mt-2 text-lg">
+                        Welcome, <span class="font-semibold text-indigo-600">${registeredUser.name}</span>. 
+                        Your registered ID is <span class="font-mono font-bold">${registeredUser.id}</span>. Please select one candidate.
+                    </p>
+                </div>
+
+                <div id="candidate-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    ${candidateCards}
+                </div>
+
+                <div class="max-w-md mx-auto">
+                    <button id="vote-button" onclick="castVote()" disabled
+                        class="btn-primary w-full text-white font-semibold py-3 rounded-lg shadow-lg opacity-50 cursor-not-allowed">
+                        Submit Vote
+                    </button>
+                    <p id="selection-message" class="text-red-500 text-center mt-3 font-medium hidden">Please select a candidate before submitting.</p>
+                </div>
+            `;
+        }
+
+        /**
+         * Renders the Confirmation/Thank You page.
+         */
+        function renderConfirmation() {
+            const content = document.getElementById('content-area');
+            const votedCandidate = candidates.find(c => c.id === selectedCandidate);
+
+            content.innerHTML = `
+                <div class="max-w-xl mx-auto text-center p-8 bg-green-50 rounded-xl border border-green-200">
+                    
+                    <svg class="mx-auto h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 class="text-3xl font-bold text-green-800 mt-4">Vote Successfully Cast!</h2>
+                    <p class="text-xl text-gray-700 mt-3">Thank you for participating, <span class="font-bold">${registeredUser.name}</span>.</p>
+                    <div class="mt-6 p-4 bg-white rounded-lg border border-gray-100 shadow-sm">
+                        <p class="text-lg font-semibold text-gray-800">You voted for:</p>
+                        <p class="text-2xl font-extrabold text-indigo-700">${votedCandidate ? votedCandidate.name : 'Unknown Candidate'}</p>
+                        <p class="text-sm text-gray-500 mt-1">The portal is now closed for this registration session.</p>
+                    </div>
+                    
+                    <button onclick="handleReturnToPortal()" class="btn-primary w-full sm:w-auto mt-8 text-white font-semibold py-3 px-6 rounded-lg shadow-lg">
+                        Return to Portal
+                    </button>
+                </div>
+            `;
+        }
+        
+        /**
+         * Renders the final Election Results page (Student-facing).
+         */
+        function renderElectionResults() {
+            const content = document.getElementById('content-area');
+            const results = getElectionResults();
+            
+            if (!results.winner) {
+                content.innerHTML = `
+                    <div class="max-w-xl mx-auto text-center p-8 bg-blue-50 rounded-xl border border-blue-200">
+                        <h2 class="text-3xl font-bold text-blue-800 mt-4">Election Closed</h2>
+                        <p class="text-xl text-gray-700 mt-3">The election has officially closed. Results are being tabulated.</p>
+                        <p class="text-sm text-gray-600 mt-2">(No votes were cast in this simulation.)</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const winner = results.winner;
+            
+            // Generate the full scoreboard table
+            const scoreboardRows = results.allScores.map(c => `
+                <tr class="border-b ${c.id === winner.id ? 'bg-green-50' : 'hover:bg-gray-50'}">
+                    <td class="px-4 py-3">
+                        <p class="font-semibold ${c.id === winner.id ? 'text-green-800' : 'text-gray-900'}">${c.name}</p>
+                        <p class="text-xs text-gray-500">${c.department}</p>
+                    </td>
+                    <td class="px-4 py-3 text-center font-bold text-lg ${c.id === winner.id ? 'text-green-800' : 'text-gray-700'}">${c.score}</td>
+                    <td class="px-4 py-3 text-center text-gray-600">${c.scorePercentage.toFixed(1)}%</td>
+                </tr>
+            `).join('');
+
+            content.innerHTML = `
+                <div class="max-w-2xl mx-auto space-y-8">
+                    <!-- Congratulations Box -->
+                    <div class="text-center p-6 bg-green-100 rounded-xl border-t-4 border-green-500">
+                        <p class="text-3xl font-bold text-green-800">CONGRATULATIONS! 🎉</p>
+                        <p class="text-lg text-green-700 mt-1">The results of the SUG Presidential Election are officially published!</p>
+                    </div>
+                    
+                    <!-- Winner Card -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-amber-400 text-center">
+                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">New SUG President:</h2>
+                        <img class="w-32 h-32 rounded-full mb-4 object-cover border-4 border-gray-200 mx-auto" 
+                             src="${winner.photoUrl}" alt="Photo of ${winner.name}" 
+                             onerror="this.onerror=null;this.src='https://placehold.co/150x150/e0e0e0/555?text=Photo';">
+                        
+                        <h3 class="text-4xl font-extrabold text-indigo-700">${winner.name}</h3>
+                        <p class="text-lg text-gray-500 mb-3">${winner.department}</p>
+                        <p class="text-2xl font-bold text-gray-700">
+                            VOTES RECEIVED: <span class="text-green-600">${winner.score}</span>
+                        </p>
+                    </div>
+
+                    <!-- Detailed Scoreboard -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-gray-300">
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-4 text-center">Detailed Election Scoreboard</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Candidate</th>
+                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Votes</th>
+                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Share</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${scoreboardRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        /**
+         * Renders the Portal Login page (for both Admin and Candidates).
+         */
+        function renderPortalLogin() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <div class="max-w-md mx-auto p-8 bg-gray-50 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center border-b pb-3">Portal Login (Admin/Candidate)</h2>
+                    
+                    <div class="bg-yellow-100 p-3 rounded-lg mb-6 text-sm border-l-4 border-yellow-500">
+                        <p class="text-yellow-800 font-medium font-semibold">
+                            Enter your authorized username and password below to access the management dashboard.
+                        </p>
+                    </div>
+
+                    <form id="portal-login-form" class="space-y-6">
+                        <div>
+                            <label for="loginUsername" class="block text-sm font-medium text-gray-700 mb-1">Username (ID)</label>
+                            <input type="text" id="loginUsername" name="loginUsername" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500" required>
+                        </div>
+                        <div>
+                            <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="loginPassword" name="loginPassword" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500" required>
+                        </div>
+                        <button type="submit" class="w-full text-white font-semibold py-3 rounded-lg shadow-lg" style="background-color: var(--accent-color);">
+                            Log In to Dashboard
+                        </button>
+                        <p id="portal-login-error" class="text-red-600 text-center mt-3 font-medium"></p>
+                    </form>
+                </div>
+            `;
+            document.getElementById('portal-login-form').addEventListener('submit', handlePortalLogin);
+        }
+
+        /**
+         * Renders the Admin Dashboard tabs and content.
+         */
+        function renderAdminDashboard() {
+            const content = document.getElementById('content-area');
+            
+            // Generate the dashboard structure with tabs
+            content.innerHTML = `
+                <div class="space-y-8">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold text-amber-700">Admin Election Dashboard</h2>
+                        <p class="text-gray-600 mt-2">Logged in as: <span class="font-semibold">${adminCredentials.username}</span></p>
+                        <button onclick="handlePortalLogout()" class="mt-4 text-sm text-red-500 hover:text-red-700">Log Out</button>
+                    </div>
+
+                    <!-- Tab Navigation -->
+                    <div class="flex border-b border-gray-200">
+                        <button class="tab-button px-4 py-2 text-gray-500 ${adminDashboardTab === 'status' ? 'active' : ''}" 
+                                onclick="setAdminTab('status')">
+                            Election Status & Control
+                        </button>
+                        <button class="tab-button px-4 py-2 text-gray-500 ${adminDashboardTab === 'data' ? 'active' : ''}" 
+                                onclick="setAdminTab('data')">
+                            Data Management
+                        </button>
+                    </div>
+
+                    <!-- Tab Content Area -->
+                    <div id="admin-tab-content"></div>
+                </div>
+            `;
+
+            // Render the content for the currently selected tab
+            if (adminDashboardTab === 'status') {
+                renderElectionStatusTab();
+            } else if (adminDashboardTab === 'data') {
+                renderDataManagementTab();
+            }
+        }
+        
+        /**
+         * Renders the Candidate Dashboard (simplified version of Admin Status).
+         */
+        function renderCandidateDashboard() {
+            const candidate = candidates.find(c => c.id === candidateViewingId);
+            if (!candidate) {
+                // If candidate ID is somehow lost, log them out.
+                handlePortalLogout();
+                return;
+            }
+
+            const results = getElectionResults();
+            const candidateScore = getCandidateScore(candidate.id);
+            const candidatePercentage = results.totalVotes > 0 ? ((candidateScore / results.totalVotes) * 100).toFixed(1) : 0.0;
+            
+            const content = document.getElementById('content-area');
+
+            content.innerHTML = `
+                <div class="space-y-8">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold text-indigo-700">Candidate Dashboard</h2>
+                        <p class="text-gray-600 mt-2">Welcome, <span class="font-semibold">${candidate.name}</span> (${candidate.department})</p>
+                        <p class="text-sm italic text-gray-500">Motto: "${candidate.motto}"</p>
+                        <button onclick="handlePortalLogout()" class="mt-4 text-sm text-red-500 hover:text-red-700">Log Out</button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500">
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-4">Real-Time Score</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mb-6">
+                            <div class="p-4 bg-green-50 rounded-lg">
+                                <p class="text-4xl font-extrabold text-green-700">${candidateScore}</p>
+                                <p class="text-sm text-gray-500">Your Current Votes</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <p class="text-4xl font-extrabold text-indigo-700">${results.totalVotes}</p>
+                                <p class="text-sm text-gray-500">Total Votes Cast So Far</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <p class="text-4xl font-extrabold text-indigo-700">${candidatePercentage}%</p>
+                                <p class="text-sm text-gray-500">Share of Total Votes</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-600 text-center mt-4">
+                            Note: This score updates in real-time as students cast their votes.
+                        </d"iv>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Renders the content for the 'Election Status & History' tab.
+         */
+        function renderElectionStatusTab() {
+            const tabContent = document.getElementById('admin-tab-content');
+
+            // Get Current Election Stats
+            const results = getElectionResults();
+            const currentStats = currentElectionStats;
+            const currentTurnout = (currentStats.totalStudentsRegistered > 0 ? (results.totalVotes / currentStats.totalStudentsRegistered) * 100 : 0);
+
+            // --- CORRECTED LOGIC ---
+            // Generate Departmental Summary Rows (Real-Time)
+            const departmentalData = getDepartmentalSummary();
+            const historyRows = departmentalData.map(data => {
+                return `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-6 py-3 font-medium text-gray-900">${data.deptName} (<span class="font-mono text-indigo-600">${data.prefix.replace('/', '')}</span>)</td>
+                        <td class="px-6 py-3 text-center">${data.totalEligible}</td>
+                        <td class="px-6 py-3 text-center text-green-700 font-bold">${data.votesCast}</td>
+                        <td class="px-6 py-3">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-indigo-600 h-2.5 rounded-full" style="width: ${data.percentage}%"></div>
+                            </div>
+                            <span class="text-xs text-gray-500 mt-1 block">${data.percentage}% Turnout</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            // --- END CORRECTION ---
+
+
+            // Generate Candidate Scoreboard for Admin
+            const candidateScores = results.allScores.map(c => `
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-lg font-semibold text-indigo-700">${c.name}</p>
+                        <p class="text-xs text-gray-500">${c.department}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-3xl font-extrabold text-green-600">${c.score}</p>
+                        <p class="text-sm text-gray-600">${c.scorePercentage.toFixed(1)}%</p>
+                    </div>
+                </div>
+            `).join('');
+
+
+            tabContent.innerHTML = `
+                <div class="space-y-10">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        
+                        <!-- Real-Time Scoreboard (Left) -->
+                        <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-lg border-t-4 border-amber-500">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Real-Time Scoreboard</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mb-6">
+                                <div class="p-4 bg-indigo-50 rounded-lg">
+                                    <p class="text-4xl font-extrabold text-indigo-700">${results.totalVotes}</p>
+                                    <p class="text-sm text-gray-500">Total Votes Cast</p>
+                                </div>
+                                <div class="p-4 bg-indigo-50 rounded-lg">
+                                    <p class="text-4xl font-extrabold text-indigo-700">${currentStats.totalStudentsRegistered}</p>
+                                    <p class="text-sm text-gray-500">Eligible Students</p>
+                                </div>
+                                <div class="p-4 bg-indigo-50 rounded-lg">
+                                    <p class="text-4xl font-extrabold text-indigo-700">${currentTurnout.toFixed(1)}%</p>
+                                    <p class="text-sm text-gray-500">Current Turnout</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 ${candidates.length > 2 ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 mt-6">
+                                ${candidateScores}
+                                ${candidates.length === 0 ? '<p class="text-center text-gray-500 col-span-full">No candidates registered.</p>' : ''}
+                            </div>
+                        </div>
+                        
+                        
+                        <!-- Election Control (Right) -->
+                        <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-lg border-t-4 border-red-500 h-fit">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">Election Control</h3>
+                            <div class="space-y-4">
+                                <p class="text-sm font-semibold text-gray-700 border-b pb-2">Set Voting Hours</p>
+                                <form id="time-control-form" class="space-y-3">
+                                    <div>
+                                        <label for="startTime" class="block text-xs font-medium text-gray-500">Start Time (HH:MM)</label>
+                                        <input type="time" id="startTime" value="${electionStartTime}" required class="w-full p-2 border border-gray-300 rounded-md">
+                                    </div>
+                                    <div>
+                                        <label for="closeTime" class="block text-xs font-medium text-gray-500">Close Time (HH:MM)</label>
+                                        <input type="time" id="closeTime" value="${electionCloseTime}" required class="w-full p-2 border border-gray-300 rounded-md">
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition duration-150">
+                                        Update Hours
+                                    </button>
+                                    <p id="time-control-message" class="text-xs text-center pt-2 text-gray-600">Current: ${electionStartTime} - ${electionCloseTime}</p>
+                                </form>
+
+                                <div class="pt-4 border-t">
+                                    <p class="text-sm font-semibold text-red-700 mb-2">Danger Zone</p>
+                                    <button onclick="handleDeleteAndStartNewElection()" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-md transition duration-150">
+                                        🗑️ Delete & Start New Election
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Announcement Tool (REMOVED) -->
+                    
+                    <!-- API Configuration (REMOVED) -->
+
+                    <!-- Departmental Summary Table (CORRECTED) -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-gray-300">
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-4">Departmental Vote Summary (Real-Time)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Eligible</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Voted</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turnout Progress</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${historyRows}
+                                    ${departmentalData.length === 0 ? '<tr><td colspan="4" class="text-center p-4 text-gray-500">No departments added yet.</td></tr>' : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // Attach event listeners after rendering
+            document.getElementById('time-control-form').addEventListener('submit', handleUpdateElectionTimes);
+        }
+        
+        /**
+         * Renders the 'Data Management' tab content (Students, Departments, Candidates).
+         */
+        function renderDataManagementTab() {
+            const tabContent = document.getElementById('admin-tab-content');
+            tabContent.innerHTML = `
+                <div class="space-y-12">
+                    ${renderManageStudentsSection()}
+                    ${renderManageCandidatesSection()}
+                    ${renderManageDepartmentsSection()}
+                </div>
+            `;
+            
+            // Attach event listeners for this tab
+            const searchInput = document.getElementById('student-search-input');
+            if (searchInput) {
+                 // --- CORRECTED LOGIC ---
+                 // We set the value directly with JS so the placeholder always shows when empty
+                 searchInput.value = studentSearchFilter; 
+                 
+                 searchInput.addEventListener('input', (e) => {
+                    studentSearchFilter = e.target.value;
+                    studentCurrentPage = 1; // Reset to first page on new search
+                    renderDataManagementTab(); // Re-render the whole tab
+                });
+            }
+           
+            document.getElementById('add-student-form').addEventListener('submit', handleAddStudent);
+            document.getElementById('add-candidate-form').addEventListener('submit', handleAddCandidate);
+            document.getElementById('add-department-form').addEventListener('submit', handleAddDepartment);
+        }
+
+        /**
+         * Renders the 'Manage Students' section for the Data Management tab.
+         */
+        function renderManageStudentsSection() {
+            // 1. Filter students based on the search query
+            const allStudents = Object.keys(studentDatabase).map(matricId => ({
+                id: matricId,
+                ...studentDatabase[matricId]
+            }));
+            
+            const filteredStudents = allStudents.filter(student => {
+                const search = studentSearchFilter.toLowerCase();
+                return student.name.toLowerCase().includes(search) || student.id.toLowerCase().includes(search);
+            });
+            
+            // 2. Paginate the filtered list
+            const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
+            const startIndex = (studentCurrentPage - 1) * studentsPerPage;
+            const endIndex = studentCurrentPage * studentsPerPage;
+            const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+            // 3. Generate HTML for the student list
+            const studentList = paginatedStudents.map(s => `
+                <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div>
+                        <p class="font-semibold text-gray-800">${s.name}</p>
+                        <p class="text-sm text-gray-500">${s.id} | ${s.dept}</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editStudent('${s.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold py-1 px-2 rounded-md">Edit</button>
+                        <button onclick="deleteStudent('${s.id}', '${s.name}')" class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-1 px-2 rounded-md">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            // 4. Generate department options for the add student form
+            const deptOptions = Object.keys(departmentPrefixes)
+                .filter(dept => departmentPrefixes[dept] !== null)
+                .map(deptName => `<option value="${deptName}">${deptName}</option>`)
+                .join('');
+
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Add Student Form (Left) -->
+                    <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500 h-fit">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Add New Eligible Student</h3>
+                        <form id="add-student-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                                <input type="text" id="studentNameAdd" required class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g., Adamu Shehu">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Matriculation Number</label>
+                                <input type="text" id="studentMatricAdd" required class="w-full p-2 border border-gray-300 rounded-md uppercase" placeholder="e.g., CMS/250001">
+                            </div>
+                            
+                            <!-- AI Normalize Button (REMOVED) -->
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Department</label>
+                                <select id="studentDeptAdd" required class="w-full p-2 border border-gray-300 rounded-md">
+                                    <option value="">-- Select Department --</option>
+                                    ${deptOptions}
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-md transition duration-150">
+                                Add Student
+                            </button>
+                            <p id="student-add-message" class="text-sm text-center mt-2"></p>
+                        </form>
+                    </div>
+
+                    <!-- Manage Students List (Right) -->
+                    <div class="md:col-span-2 space-y-4">
+                        <h3 class="text-xl font-bold text-gray-800">Search & Manage Existing Students (${filteredStudents.length})</h3>
+                        
+                        <!-- Search Bar (CORRECTED: value="" removed) -->
+                        <input type="text" id="student-search-input" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Search by name or matriculation number...">
+                        
+                        <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                            ${studentList}
+                            ${paginatedStudents.length === 0 ? '<p class="text-center text-gray-500 p-8 border rounded-lg">No students found matching your criteria.</p>' : ''}
+                        </div>
+                        
+                        <!-- Pagination Controls -->
+                        <div class="flex justify-between items-center pt-4 border-t">
+                            <button id="prev-page" onclick="changeStudentPage(-1)" class="pagination-btn font-semibold py-2 px-4 rounded-lg" ${studentCurrentPage === 1 ? 'disabled' : ''}>
+                                &larr; Previous
+                            </button>
+                            <span class="text-sm font-medium text-gray-700">
+                                Page ${studentCurrentPage} of ${totalPages > 0 ? totalPages : 1}
+                            </span>
+                            <button id="next-page" onclick="changeStudentPage(1)" class="pagination-btn font-semibold py-2 px-4 rounded-lg" ${studentCurrentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>
+                                Next &rarr;
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        /**
+         * Renders the 'Manage Candidates' section for the Data Management tab.
+         */
+        function renderManageCandidatesSection() {
+            const candidateList = candidates.map(c => `
+                <div class="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div class="flex items-center space-x-4">
+                         <img class="w-12 h-12 rounded-full object-cover" 
+                              src="${c.photoUrl}" alt="Photo of ${c.name}" 
+                              onerror="this.onerror=null;this.src='https://placehold.co/150x150/e0e0e0/555?text=C';">
+                        <div>
+                            <p class="text-lg font-semibold text-gray-800">${c.name} (<span class="text-indigo-600">${c.id}</span>)</p>
+                            <p class="text-sm text-gray-500">${c.department}</p>
+                            <p class="text-xs text-red-500">Login: ${c.loginId} / ${c.password}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteCandidate('${c.id}', '${c.name}')" 
+                            class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-3 rounded-md transition duration-150">
+                        Delete
+                    </button>
+                </div>
+            `).join('');
+
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Add Candidate Form (Left) -->
+                    <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-500 h-fit">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Add New SUG Candidate</h3>
+                        <form id="add-candidate-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Name</label>
+                                <input type="text" id="candidateName" required class="w-full p-2 border border-gray-300 rounded-md">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Department</label>
+                                <input type="text" id="candidateDepartment" required class="w-full p-2 border border-gray-300 rounded-md">
+                            </div>
+
+                            <!-- AI Button (REMOVED) -->
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Motto</label>
+                                <input type="text" id="candidateMotto" required class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g., Progress and Integrity">
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Manifesto Summary</label>
+                                <textarea id="candidateManifesto" required rows="3" class="w-full p-2 border border-gray-300 rounded-md" placeholder="A brief summary of their platform..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Candidate Image Link (For Display)</label>
+                                <input type="url" id="candidatePhotoUrl" placeholder="Paste a public image link (e.g., from Imgur)" class="w-full p-2 border border-gray-300 rounded-md">
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition duration-150">
+                                Register Candidate
+                            </button>
+                            <p id="candidate-message" class="text-sm text-center mt-2"></p>
+                        </form>
+                    </div>
+
+                    <!-- Manage Candidates List (Right) -->
+                    <div class="md:col-span-2 space-y-3">
+                         <h3 class="text-xl font-bold text-gray-800 mb-4">Existing Candidates (${candidates.length})</h3>
+                         <div class="space-y-3">
+                             ${candidateList}
+                             ${candidates.length === 0 ? '<p class="text-center text-gray-500 p-8 border rounded-lg">No candidates registered yet.</p>' : ''}
+                         </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Renders the 'Manage Departments' section for the Data Management tab.
+         */
+        function renderManageDepartmentsSection() {
+            const departmentList = Object.keys(departmentPrefixes)
+                .filter(dept => departmentPrefixes[dept] !== null)
+                .map(deptName => `
+                    <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <div>
+                            <p class="font-semibold text-gray-800">${deptName}</p>
+                            <p class="text-sm text-gray-500">Prefix: <span class="font-mono">${departmentPrefixes[deptName]}</span></p>
+                        </div>
+                        <button onclick="deleteDepartment('${deptName}')" class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-1 px-2 rounded-md">Delete</button>
+                    </div>
+                `).join('');
+
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Add Department Form (Left) -->
+                    <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-lg border-t-4 border-gray-500 h-fit">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Add New Department</h3>
+                        <form id="add-department-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Department Name</label>
+                                <input type="text" id="deptName" required class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g., Electrical Engineering">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Matriculation Prefix</label>
+                                <input type="text" id="deptPrefix" required class="w-full p-2 border border-gray-300 rounded-md uppercase" placeholder="e.g., EE/">
+                            </div>
+                            <button type="submit" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 rounded-md transition duration-150">
+                                Add Department
+                            </button>
+                            <p id="department-message" class="text-sm text-center mt-2"></p>
+                        </form>
+                    </div>
+
+                    <!-- Manage Departments List (Right) -->
+                    <div class="md:col-span-2 space-y-3">
+                         <h3 class="text-xl font-bold text-gray-800 mb-4">Existing Departments (${Object.keys(departmentPrefixes).length - 1})</h3>
+                         <div class="space-y-3">
+                             ${departmentList}
+                         </div>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        /**
+         * Sets the active tab in the Admin Dashboard and re-renders.
+         */
+        function setAdminTab(tabName) {
+            adminDashboardTab = tabName;
+            renderAdminDashboard();
+        }
+        
+        /**
+         * Handles changing the page in the student pagination.
+         */
+        function changeStudentPage(direction) {
+            // Recalculate total pages based on current filter
+            const allStudents = Object.keys(studentDatabase).map(matricId => ({
+                id: matricId,
+                ...studentDatabase[matricId]
+            }));
+            const filteredStudents = allStudents.filter(student => {
+                const search = studentSearchFilter.toLowerCase();
+                return student.name.toLowerCase().includes(search) || student.id.toLowerCase().includes(search);
+            });
+            const totalPages = Math.ceil(filteredStudents.length / studentsPerPage) || 1;
+            
+            studentCurrentPage += direction;
+            
+            if (studentCurrentPage < 1) studentCurrentPage = 1;
+            if (studentCurrentPage > totalPages) studentCurrentPage = totalPages;
+            
+            renderDataManagementTab(); // Re-render the tab
+        }
+
+        /**
+         * Adds a new candidate to the system.
+         */
+        function handleAddCandidate(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('candidateName');
+            const deptInput = document.getElementById('candidateDepartment');
+            const mottoInput = document.getElementById('candidateMotto');
+            const manifestoInput = document.getElementById('candidateManifesto');
+            const photoInput = document.getElementById('candidatePhotoUrl');
+            const messageElement = document.getElementById('candidate-message');
+            
+            const name = nameInput.value.trim();
+            const department = deptInput.value.trim();
+            const motto = mottoInput.value.trim();
+            const manifesto = manifestoInput.value.trim();
+            const photoUrl = photoInput.value.trim() || getAvatarUrl(name); // Fallback to avatar
+
+            // Simple validation
+            if (!name || !department || !motto || !manifesto) {
+                messageElement.textContent = 'Error: All fields (including Motto/Manifesto) must be filled.';
+                messageElement.className = 'text-sm text-red-600 text-center mt-2';
+                return;
+            }
+
+            // Create new candidate object
+            const newCandidate = {
+                id: generateCandidateId(),
+                name: name,
+                department: department,
+                motto: motto, // Use the generated or manually entered motto
+                manifesto: manifesto, // Store the full summary
+                loginId: generateCandidateLoginId(name),
+                password: 'candidate' + Math.floor(Math.random() * 900 + 100), // e.g., candidate456
+                photoUrl: photoUrl
+            };
+
+            // Add to the global candidates array
+            candidates.push(newCandidate);
+
+            // Clear form and display success
+            nameInput.value = '';
+            deptInput.value = '';
+            mottoInput.value = '';
+            manifestoInput.value = '';
+            photoInput.value = '';
+            
+            messageElement.textContent = `Success! ${newCandidate.name} added. Login: ${newCandidate.loginId} / ${newCandidate.password}`;
+            messageElement.className = 'text-sm text-green-600 text-center mt-2 font-bold';
+
+            // Re-render the management tab to show the new candidate
+            renderDataManagementTab();
+        }
+
+        /**
+         * Deletes a candidate after confirmation.
+         */
+        function deleteCandidate(candidateId, candidateName) {
+            if (!confirm(`Are you sure you want to permanently delete candidate ${candidateName}? All votes for this candidate will be lost.`)) {
+                return;
+            }
+
+            // Remove candidate from the global candidates array
+            candidates = candidates.filter(c => c.id !== candidateId);
+
+            // Remove all votes for this candidate from the tracker
+            for (const matricId in voteResults) {
+                if (voteResults[matricId] === candidateId) {
+                    delete voteResults[matricId];
+                }
+            }
+            
+            // Re-render the management tab
+            renderDataManagementTab();
+        }
+        
+        /**
+         * Adds a new department to the system.
+         */
+        function handleAddDepartment(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('deptName');
+            const prefixInput = document.getElementById('deptPrefix');
+            const messageElement = document.getElementById('department-message');
+            
+            const deptName = nameInput.value.trim();
+            let deptPrefix = prefixInput.value.trim().toUpperCase();
+            
+            if (!deptName || !deptPrefix) {
+                messageElement.textContent = 'Error: Both fields are required.';
+                messageElement.className = 'text-sm text-red-600 text-center mt-2';
+                return;
+            }
+            
+            // Ensure prefix ends with '/'
+            if (!deptPrefix.endsWith('/')) {
+                deptPrefix += '/';
+            }
+
+            if (departmentPrefixes[deptName]) {
+                messageElement.textContent = 'Error: This department name already exists.';
+                messageElement.className = 'text-sm text-red-600 text-center mt-2';
+                return;
+            }
+            
+            // Check for duplicate prefix
+            if (Object.values(departmentPrefixes).includes(deptPrefix)) {
+                messageElement.textContent = `Error: The prefix ${deptPrefix} is already in use by another department.`;
+                messageElement.className = 'text-sm text-red-600 text-center mt-2';
+                return;
+            }
+
+            // Add to the global department object
+            departmentPrefixes[deptName] = deptPrefix;
+            
+            nameInput.value = '';
+            prefixInput.value = '';
+            messageElement.textContent = 'Success! Department added.';
+            messageElement.className = 'text-sm text-green-600 text-center mt-2';
+            
+            renderDataManagementTab(); // Re-render
+        }
+
+        /**
+         * Deletes a department after confirmation.
+         */
+        function deleteDepartment(deptName) {
+            // Check if any student or candidate is using this department
+            const isDeptInUse = Object.values(studentDatabase).some(s => s.dept === deptName) ||
+                                candidates.some(c => c.department === deptName);
+                                
+            if (isDeptInUse) {
+                alert(`Error: Cannot delete "${deptName}". It is currently in use by one or more students or candidates. Please reassign them first.`);
+                return;
+            }
+
+            if (confirm(`Are you sure you want to permanently delete the department: ${deptName}?`)) {
+                delete departmentPrefixes[deptName];
+                renderDataManagementTab(); // Re-render
+            }
+        }
+        
+        /**
+         * Adds a new student to the database.
+         */
+        function handleAddStudent(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('studentNameAdd');
+            const matricInput = document.getElementById('studentMatricAdd');
+            const deptInput = document.getElementById('studentDeptAdd');
+            const messageElement = document.getElementById('student-add-message');
+            
+            const name = nameInput.value.trim();
+            const matricId = matricInput.value.trim().toUpperCase();
+            const dept = deptInput.value;
+
+            if (!name || !matricId || !dept) {
+                messageElement.textContent = 'Error: All fields are required.';
+                messageElement.className = 'text-sm text-red-600 text-center mt-2';
+                return;
+            }
+            
+            const prefix = departmentPrefixes[dept];
+            if (!prefix) {
+                 messageElement.textContent = `Error: Invalid department selected.`;
+                 messageElement.className = 'text-sm text-red-600 text-center mt-2';
+                 return;
+            }
+            if (!matricId.startsWith(prefix)) {
+                 messageElement.textContent = `Error: Matric ID must start with ${prefix} for ${dept}.`;
+                 messageElement.className = 'text-sm text-red-600 text-center mt-2';
+                 return;
+            }
+            
+            if (studentDatabase[matricId]) {
+                 messageElement.textContent = 'Error: This Matriculation ID already exists.';
+                 messageElement.className = 'text-sm text-red-600 text-center mt-2';
+                 return;
+            }
+
+            // Add to database
+            studentDatabase[matricId] = { name: name, dept: dept };
+            
+            nameInput.value = '';
+            matricInput.value = '';
+            deptInput.value = '';
+            messageElement.textContent = 'Success! Student added.';
+            messageElement.className = 'text-sm text-green-600 text-center mt-2';
+            
+            renderDataManagementTab(); // Re-render
+        }
+
+        /**
+         * Edits an existing student's details.
+         */
+        function editStudent(matricId) {
+            const student = studentDatabase[matricId];
+            if (!student) return;
+
+            const newName = prompt(`Enter new name for ${student.name} (Matric: ${matricId}):`, student.name);
+            if (newName === null || newName.trim() === '') return; // Canceled
+
+            const newDept = prompt(`Enter new department for ${newName}:`, student.dept);
+            if (newDept === null || newDept.trim() === '') return; // Canceled
+
+            if (!departmentPrefixes[newDept]) {
+                alert(`Error: The department "${newDept}" does not exist. Please add it first or check spelling.`);
+                return;
+            }
+
+            // Update database
+            studentDatabase[matricId].name = newName.trim();
+            studentDatabase[matricId].dept = newDept.trim();
+            
+            renderDataManagementTab(); // Re-render
+        }
+
+        /**
+         * Deletes a student after confirmation.
+         */
+        function deleteStudent(matricId, studentName) {
+            if (confirm(`Are you sure you want to permanently delete student: ${studentName} (${matricId})?`)) {
+                delete studentDatabase[matricId];
+                // Also remove their vote if they cast one
+                if (voteResults[matricId]) {
+                    delete voteResults[matricId];
+                }
+                renderDataManagementTab(); // Re-render
+            }
+        }
+        
+
+        /**
+         * Logs out the user (Admin or Candidate).
+         */
+        function handlePortalLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorElement = document.getElementById('portal-login-error');
+            errorElement.textContent = ''; // Clear previous error
+
+            // 1. Check for Admin Login
+            if (username === adminCredentials.username && password === adminCredentials.password) {
+                isAdminLoggedIn = true;
+                currentPage = 'adminDashboard';
+                adminDashboardTab = 'status'; // Default to status tab
+                renderApp();
+                return;
+            }
+
+            // 2. Check for Candidate Login
+            const loggedInCandidate = candidates.find(c => c.loginId === username && c.password === password);
+
+            if (loggedInCandidate) {
+                candidateViewingId = loggedInCandidate.id; // Store the CAND ID
+                currentPage = 'candidateDashboard';
+                renderApp();
+                return;
+            }
+            
+            // 3. Login Failed
+            errorElement.textContent = 'Invalid username or password for Admin or Candidate.';
+        }
+
+        /**
+         * Logs out the user (Admin or Candidate).
+         */
+        function handlePortalLogout() {
+            isAdminLoggedIn = false;
+            candidateViewingId = null;
+            currentPage = 'portalLogin';
+            renderApp();
+        }
+        
+        /**
+         * Admin: Updates the global election start/close times.
+         */
+        function handleUpdateElectionTimes(event) {
+            event.preventDefault();
+            const newStartTime = document.getElementById('startTime').value;
+            const newCloseTime = document.getElementById('closeTime').value;
+            
+            if (timeToMinutes(newStartTime) >= timeToMinutes(newCloseTime)) {
+                alert('Error: Start time must be before close time.');
+                return;
+            }
+            
+            electionStartTime = newStartTime;
+            electionCloseTime = newCloseTime;
+            
+            document.getElementById('time-control-message').textContent = `Updated! Current: ${electionStartTime} - ${electionCloseTime}`;
+            
+            // Force re-render of status tab
+            setAdminTab('status');
+        }
+
+        /**
+         * Admin: Deletes all votes and resets the election.
+         */
+        function handleDeleteAndStartNewElection() {
+            if (!confirm('DANGER: Are you sure you want to delete all election data?\n\nThis will ERASE ALL VOTES and reset the portal for a new election. This action cannot be undone.')) {
+                return;
+            }
+            
+            // showLoading(); // REMOVED
+            
+            // Reset the vote tracker
+            Object.keys(voteResults).forEach(key => delete voteResults[key]);
+            
+            // Simulate a short delay for a "heavy" operation
+            setTimeout(() => {
+                // hideLoading(); // REMOVED
+                alert('All election data has been cleared. The portal is ready for a new election.');
+                setAdminTab('status'); // Refresh the tab
+            }, 500); // Short delay
+        }
+
+
+        /**
+         * Selects a candidate by highlighting their card (used in renderVotePage).
+         */
+        function selectCandidate(candidateId) {
+            selectedCandidate = candidateId;
+
+            document.querySelectorAll('.voter-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.getElementById(`card-${candidateId}`).classList.add('selected');
+
+            const voteButton = document.getElementById('vote-button');
+            if (voteButton) {
+                voteButton.disabled = false;
+                voteButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('selection-message').classList.add('hidden');
+            }
+        }
+        
+        // --- Helper functions for Student Registration ---
+
+        function updateRegistrationFields() {
+            const deptSelect = document.getElementById('department');
+            const matricInput = document.getElementById('matriculationId');
+            const nameInput = document.getElementById('studentName');
+            const registerBtn = document.getElementById('register-button');
+            const deptInfo = document.getElementById('dept-info');
+
+            const selectedDept = deptSelect.value;
+            const prefix = departmentPrefixes[selectedDept];
+
+            // Only enable matric input if a valid department is selected
+            matricInput.disabled = (prefix === null);
+            matricInput.value = '';
+            nameInput.value = '';
+            registerBtn.disabled = true;
+            registerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            deptInfo.textContent = prefix ? `Matriculation ID must start with ${prefix}` : '';
+        }
+
+        function validateMatriculation() {
+            const deptSelect = document.getElementById('department');
+            const matricInput = document.getElementById('matriculationId');
+            const nameInput = document.getElementById('studentName');
+            const registerBtn = document.getElementById('register-button');
+            const matricError = document.getElementById('matric-error');
+
+            const selectedDept = deptSelect.value;
+            const matricId = matricInput.value.toUpperCase();
+            const prefix = departmentPrefixes[selectedDept];
+            
+            matricInput.value = matricId; // Ensure input is uppercase
+
+            // Clear state
+            nameInput.value = '';
+            registerBtn.disabled = true;
+            registerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            matricError.textContent = '';
+
+
+            if (!prefix) {
+                 matricError.textContent = 'Please select a department first.';
+                 return;
+            }
+            
+            if (matricId.length < prefix.length) {
+                return; // Not long enough to validate yet
+            }
+
+            if (!matricId.startsWith(prefix)) {
+                matricError.textContent = `Error: Matriculation must start with ${prefix} for your department.`;
+                return;
+            }
+
+            const studentData = studentDatabase[matricId];
+
+            if (studentData) {
+                // Check if student's registered department matches the selected department
+                if (studentData.dept !== selectedDept) {
+                     matricError.textContent = `Error: This Matric ID is registered under ${studentData.dept}, not ${selectedDept}.`;
+                     return;
+                }
+                
+                nameInput.value = studentData.name;
+                
+                if (voteResults[matricId]) {
+                    matricError.textContent = 'ACCESS DENIED: This matriculation number has already cast a vote for the current election.';
+                    return;
+                }
+
+                // Success! Enable the button
+                registerBtn.disabled = false;
+                registerBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                return;
+            } else {
+                if (matricId.length > prefix.length + 3) { // Only show "not found" if they've typed a bit
+                    matricError.textContent = 'Error: Matriculation ID not found in the eligible voter database.';
+                }
+            }
+        }
+
+        function handleRegistration(event) {
+            event.preventDefault();
+            const matricId = document.getElementById('matriculationId').value.toUpperCase();
+            const name = document.getElementById('studentName').value;
+            const department = document.getElementById('department').value;
+            
+            // Final check on client side
+            if (voteResults[matricId]) {
+                document.getElementById('matric-error').textContent = 'ACCESS DENDENIED: This matriculation number has already cast a vote for the current election.';
+                return;
+            }
+
+            // Register user and move to voting page
+            registeredUser = { id: matricId, name: name, department: department };
+            currentPage = 'vote';
+            renderApp();
+        }
+
+        function castVote() {
+            if (!selectedCandidate || !registeredUser.id) {
+                document.getElementById('selection-message').classList.remove('hidden');
+                return;
+            }
+
+            // Record the vote in the ledger
+            voteResults[registeredUser.id] = selectedCandidate;
+
+            // Move to confirmation page
+            currentPage = 'confirmation';
+            renderApp();
+        }
+        
+        /**
+         * Handles the "Return to Portal" button on the confirmation page.
+         */
+        function handleReturnToPortal() {
+            currentPage = 'registration';
+            registeredUser = { name: null, id: null, department: null };
+            selectedCandidate = null;
+            renderApp();
+        }
+
+        // --- Main App Renderer ---
+
+        /**
+         * Main application rendering function, switches between pages based on state.
+         */
+        function renderApp() {
+            window.scrollTo(0, 0); // Scroll to top on page change
+            const navToggle = document.getElementById('nav-toggle');
+
+            if (isAdminLoggedIn) {
+                // Admin Dashboard View
+                navToggle.textContent = 'Admin Dashboard';
+                navToggle.classList.remove('admin-link'); 
+                renderAdminDashboard();
+
+            } else if (candidateViewingId) {
+                 // Candidate Dashboard View
+                navToggle.textContent = 'Candidate Dashboard';
+                navToggle.classList.remove('admin-link'); 
+                renderCandidateDashboard();
+
+            } else if (currentPage.includes('Login')) {
+                // Login Screen View
+                navToggle.textContent = '← Back to Student Portal';
+                navToggle.classList.remove('admin-link'); 
+                renderPortalLogin();
+
+            } else {
+                // Student Portal View
+                navToggle.textContent = 'Portal Login →';
+                navToggle.classList.add('admin-link');
+                
+                switch (currentPage) {
+                    case 'registration':
+                        renderRegistration();
+                        break;
+                    case 'vote':
+                        renderVotePage();
+                        break;
+                    case 'confirmation':
+                        renderConfirmation();
+                        break;
+                    default:
+                        currentPage = 'registration';
+                        renderRegistration();
+                }
+            }
+        }
+
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            renderApp(); // Initial render of the content
+            startClockAndPolling(); // Start the real-time clock loop
+        });
+    </script>
+</body>
+</html>
