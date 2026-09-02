@@ -156,13 +156,15 @@
         // Admin Credentials
         const adminCredentials = { 
             username: 'ASGALADIMA', 
-            password: 'galadima123' 
+            password: '123' 
         };
 
-        // Election Security Config: Defines the months (0-indexed: 0=Jan, 11=Dec) and years when registration is valid.
+                // Election Security Config: Defines the months (0-indexed: 0=Jan, 11=Dec) and years when registration is valid.
         const validElectionPeriods = [
-            { year: 2025, month: 10 }, // Valid in November 2025 (Month 10)
+            { year: 2026, month: 3 }, // Asalin watan zabe (April 2026)
+            { year: 2026, month: 8 }  // Watan gwaji na yanzu (September 2026) domin tsarin ya bude yanzu
         ];
+
 
         // TRACKER 1: Stores Matriculation IDs who have cast a vote (Matric ID -> Candidate ID)
         let voteResults = {
